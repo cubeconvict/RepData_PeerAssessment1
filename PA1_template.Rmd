@@ -8,18 +8,109 @@ output:
 
 ## Loading and preprocessing the data
 
+```{R}
+getdata <- function () {
 
+  myZip = "./activity.zip"
+  csvpath="./temp/activity.csv"
+  #unzip the data package into a temp directory
+  unzip(myZip, exdir="./temp")
+
+  mydata <- read.csv(csvpath)
+  mydata$date <- as.Date(mydata$date)
+  
+  #head(mydata)
+  
+  return(mydata)
+}
+
+  mydata <- getdata()
+  
+stepshistogram <- function(mydata){
+  steps.sum <- tapply(mydata$steps, mydata$date, FUN=sum)
+  steps.sum.dataframe <- as.data.frame(steps.sum)
+  hist(steps.sum.dataframe$steps, xlab="Day", ylab="Total steps")
+  return(steps.sum)
+  }
+  
+stepshistogram(mydata)
+  
+```
 
 ## What is mean total number of steps taken per day?
 
+```{r}
+get.means.data <- function(mydata){
+  means.data <- tapply(mydata$steps, mydata$date, FUN=mean, na.rm=TRUE)
+  return(means.data)
+}
+get.medians.data <- function(mydata) {
+  medians.data <- tapply(mydata$steps, mydata$date, median, na.rm=TRUE)
+  #sapply(mydata, function(i) tapply(df[[i]], df$group, sd, na.rm=TRUE))
+  return(medians.data)
+}
 
+means.data <- get.means.data(mydata)
+medians.data <- get.medians.data(mydata)
+means.medians.matrix <- cbind(means.data, medians.data)
+
+print(means.medians.matrix)
+```
 
 ## What is the average daily activity pattern?
+What is the average daily activity pattern?
+
+Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
+```{r}
+plot.daily.activity <- function(mydata) {
+  daily.activity.data <- tapply(mydata$steps, mydata$interval, FUN=mean, na.rm=TRUE)
+  class(daily.activity.data)
+  
+  plot(daily.activity.data, type="l", main='Daily Activity', xlab = "Interval", ylab="Average number of steps")
+  return(daily.activity.data)
+}
 
 
+plot.daily.activity(mydata)
+```
 
 ## Imputing missing values
 
 
 
+
+
 ## Are there differences in activity patterns between weekdays and weekends?
+
+This code creates a panel plot containing a time series plot of the 5-minute interval during the day and the average number of steps taken, averaged across all weekday days or weekend days. 
+
+```{r}
+weekend.activity <- function(mydata) {
+  # Create a factor with the day of the week
+  day <- weekdays(mydata$date) 
+  alldays.matrix <- cbind(mydata, day)
+  # Replace the day of the week with a weekend or weekday factor
+  alldays.matrix$day <- as.character(alldays.matrix$day)
+  alldays.matrix$day[alldays.matrix$day == "Monday" |  alldays.matrix$day == "Tuesday" | 
+                        alldays.matrix$day == "Wednesday" | alldays.matrix$day == "Thursday"| 
+                        alldays.matrix$day == "Friday"] <- "weekday"
+
+  alldays.matrix$day[alldays.matrix$day == "Sunday" | alldays.matrix$day == "Saturday" ] <- "weekend"
+  
+  weekdays.matrix <- subset(alldays.matrix, day == "weekend")
+  weekend.matrix <- subset(alldays.matrix, day == "weekday")
+  
+  #plot
+  weekend.activity.data <- tapply(weekend.matrix$steps, weekend.matrix$interval, FUN=mean, na.rm=TRUE)
+  weekday.activity.data <- tapply(weekdays.matrix$steps, weekdays.matrix$interval, FUN=mean, na.rm=TRUE)
+  
+  par(mfrow=c(2,1))
+  plot(weekend.activity.data, type="l", xlab="Interval", ylab="average steps", main="Weekends")
+  plot(weekend.activity.data, type="l", xlab="Interval", ylab="average steps", main="Weekdays")
+} 
+
+weekend.activity(mydata)
+
+```
